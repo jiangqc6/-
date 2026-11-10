@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>手势全屏测试页</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; font-family: sans-serif; }
+        #box { max-width: 640px; margin: 16px auto; position: relative; background: #000; }
+        #v { width: 100%; display: block; }
+        .btns { padding: 12px; display: flex; gap: 8px; }
+        button { padding: 10px 14px; }
+        #status { padding: 12px; color: #aaa; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div id="box">
+        <video id="v" src="sintel.mp4" controls playsinline></video>
+    </div>
+    <div class="btns">
+        <button id="max">网页内最大化</button>
+        <button id="fs">系统全屏 API</button>
+    </div>
+    <p id="status">先在网页内播放，再点“最大化”，然后长按/左右滑动画面。</p>
+    <script>
+        var box = document.getElementById('box');
+        var v = document.getElementById('v');
+        var status = document.getElementById('status');
+
+        document.getElementById('max').addEventListener('click', function () {
+            box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;';
+            v.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+            status.textContent = '已网页内最大化；现在长按画面或左右滑动。';
+        });
+
+        document.getElementById('fs').addEventListener('click', function () {
+            var fn = box.requestFullscreen || box.webkitRequestFullscreen;
+            if (!fn) {
+                status.textContent = '当前 WebView 不支持 Fullscreen API';
+                return;
+            }
+            fn.call(box).catch(function (e) {
+                status.textContent = '全屏失败：' + e;
+            });
+        });
+
+        v.addEventListener('play', function () { status.textContent = '播放中：' + v.currentTime.toFixed(1) + 's'; });
+        setInterval(function () {
+            if (!v.paused) status.textContent = '播放中：' + v.currentTime.toFixed(1) + 's / ' + (v.duration || 0).toFixed(0) + 's';
+        }, 1000);
+    </script>
+</body>
+</html>

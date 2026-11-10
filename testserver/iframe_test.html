@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同源 iframe 播放测试页</title>
+<style>
+  html,body{margin:0;background:#200}
+  iframe{border:0;width:100vw;height:500px;display:block}
+  #tip{position:fixed;right:0;top:0;color:#f88;font:12px sans-serif;z-index:9}
+</style>
+</head>
+<body>
+<div id="tip">iframe_test 父页（视频在同源 iframe 内）</div>
+<iframe id="frame" src="iframe_child.html"></iframe>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>嗅探测试页</title>
+    <style>
+        body { font-family: sans-serif; padding: 16px; background: #fff; color: #111; }
+        video { width: 100%; max-width: 640px; background: #000; }
+        button, a { display: inline-block; margin: 8px 8px 8px 0; padding: 10px 14px; }
+        #status { color: #555; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>嗅探测试页</h1>
+    <video controls playsinline src="flower.mp4"></video>
+    <p>52 秒测试片（验证长按倍速/进度记忆）：</p>
+    <video controls playsinline src="sintel.mp4"></video>
+    <p>
+        <a href="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8">公网 HLS 清单</a>
+        <a href="http://10.0.2.2:8765/missing.m3u8">失效 HLS（404，测试播放失败兜底）</a>
+    </p>
+    <p>
+        <button id="dynamic">动态请求 m3u8（测试 JS 钩子）</button>
+        <button onclick="window.open('about:blank', '_blank')">弹窗测试</button>
+        <a href="https://example.com" target="_blank">target=_blank 测试</a>
+    </p>
+    <p id="status"></p>
+    <script>
+        document.getElementById('dynamic').addEventListener('click', async function () {
+            try {
+                const response = await fetch('dyn.m3u8?t=' + Date.now());
+                document.getElementById('status').textContent = '已请求：' + response.url;
+            } catch (e) {
+                document.getElementById('status').textContent = '请求失败：' + e;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>弹窗测试页</title>
+<style>
+  body{font-family:sans-serif;background:#111;color:#eee;padding:24px;font-size:16px}
+  a,button{display:block;margin:12px 0;padding:14px;background:#2a6;color:#fff;border:0;border-radius:8px;font-size:16px;text-decoration:none;text-align:center}
+  #status{color:#9c9;font-size:14px;margin-top:20px}
+</style>
+</head>
+<body>
+<h2>弹窗测试页</h2>
+<a id="link-blank" href="popup_target.html" target="_blank">target=_blank 链接（用户点击）</a>
+<button id="btn-open" onclick="window.open('popup_target.html','_blank')">window.open（用户点击）</button>
+<button id="btn-auto" onclick="scheduleAuto()">8 秒后自动 window.open（模拟广告）</button>
+<div id="status">停留在此页</div>
+<script>
+  function scheduleAuto(){
+    document.getElementById('status').textContent = '等待自动弹窗…';
+    setTimeout(function(){ window.open('popup_target.html','_blank'); }, 8000);
+  }
+</script>
+</body>
+</html>
