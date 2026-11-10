@@ -30,6 +30,10 @@ private class FakeWatchSessionDao : WatchSessionDao {
         rows.removeAll { it.identityUrl == identityUrl }
     }
 
+    override suspend fun clearAll() {
+        rows.clear()
+    }
+
     override suspend fun trimTo(limit: Int) {
         val kept = rows.sortedByDescending { it.updatedAt }.take(limit)
         rows.clear()
@@ -143,6 +147,21 @@ class WatchSessionRepositoryTest {
         assertEquals(0, dao.rows.size)
         assertNull(repo.findForPage("https://a.com/v"))
         assertEquals(Triple("https://a.com/v?utm_source=wx", 0L, 0L), history.updates.last())
+    }
+
+    @Test
+    fun clearAllForgetsEverySession() = runTest {
+        val dao = FakeWatchSessionDao()
+        var now = 1_000L
+        val repo = WatchSessionRepository(dao, RecordingHistoryDao()) { now }
+        repo.save("https://a.com/1", "第一集", "k1", 40_000, 100_000)
+        now = 2_000L
+        repo.save("https://a.com/2", "第二集", "k2", 40_000, 100_000)
+
+        repo.clearAll()
+
+        assertEquals(0, dao.rows.size)
+        assertEquals(0, repo.observeRecent().first().size)
     }
 
     @Test

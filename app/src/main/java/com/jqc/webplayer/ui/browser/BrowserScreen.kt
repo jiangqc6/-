@@ -93,6 +93,13 @@ fun BrowserScreen(
     onBackToHome: () -> Unit,
     onPlay: (PlaybackRequest) -> Unit,
     onPageVisited: (pageUrl: String, title: String) -> Unit,
+    onPlaybackProgress: (
+        pageUrl: String,
+        pageTitle: String,
+        videoKey: String,
+        positionMs: Long,
+        durationMs: Long,
+    ) -> Unit,
     onToggleFavorite: (pageUrl: String, title: String, videoUrl: String?) -> Unit,
     onMessage: (String) -> Unit,
 ) {
@@ -112,6 +119,7 @@ fun BrowserScreen(
     val sslErrorState = remember { mutableStateOf<String?>(null) }
     val messageCallback = rememberUpdatedState(onMessage)
     val pageVisitedCallback = rememberUpdatedState(onPageVisited)
+    val playbackProgressCallback = rememberUpdatedState(onPlaybackProgress)
     val playCallback = rememberUpdatedState(onPlay)
     val rememberProgress = rememberUpdatedState(settings.rememberProgress)
     val scope = rememberCoroutineScope()
@@ -205,10 +213,15 @@ fun BrowserScreen(
                 if (!rememberProgress.value) return
                 val pageUrl = controllerHolder[0]?.currentUrl()?.takeIf { it.isNotBlank() }
                     ?: currentUrlState.value
-                val pageTitle = titleState.value
-                scope.launch {
-                    watchSessionRepository.save(pageUrl, pageTitle, videoKey, positionMs, durationMs)
-                }
+                // 落库交给首页侧的长生命周期协程：离开浏览器页时最后一次 flush
+                // 会晚于本页销毁到达，本页的作用域那时已被取消。
+                playbackProgressCallback.value(
+                    pageUrl,
+                    titleState.value,
+                    videoKey,
+                    positionMs,
+                    durationMs,
+                )
             }
 
             override fun onResumeApplied(videoKey: String, positionMs: Long) {

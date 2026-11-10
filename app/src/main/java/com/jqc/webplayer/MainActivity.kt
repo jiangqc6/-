@@ -99,7 +99,12 @@ class MainActivity : ComponentActivity() {
                             scope.launch { container.historyRepository.delete(id) }
                         },
                         onClearHistory = {
-                            scope.launch { container.historyRepository.clear() }
+                            scope.launch {
+                                container.historyRepository.clear()
+                                // 历史与播放进度是同一套“浏览记录”，清空历史必须一起清，
+                                // 否则首页“继续观看”还留着已删掉的记录。
+                                container.watchSessionRepository.clearAll()
+                            }
                         },
                         onDeleteFavorite = { id ->
                             scope.launch { container.favoritesRepository.delete(id) }
@@ -129,6 +134,17 @@ class MainActivity : ComponentActivity() {
                         onPageVisited = { pageUrl, pageTitle ->
                             scope.launch {
                                 container.historyRepository.recordVisit(pageUrl, pageTitle)
+                            }
+                        },
+                        onPlaybackProgress = { pageUrl, pageTitle, videoKey, positionMs, durationMs ->
+                            scope.launch {
+                                container.watchSessionRepository.save(
+                                    pageUrl,
+                                    pageTitle,
+                                    videoKey,
+                                    positionMs,
+                                    durationMs,
+                                )
                             }
                         },
                         onToggleFavorite = { pageUrl, pageTitle, videoUrl ->

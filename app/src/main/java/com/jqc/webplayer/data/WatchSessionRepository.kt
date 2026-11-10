@@ -61,6 +61,11 @@ class WatchSessionRepository(
         historyDao.updateProgress(existing.pageUrl, 0, 0, clock())
     }
 
+    /** 清空历史时同步忘掉全部网页播放进度，首页“继续观看”随之消失。 */
+    suspend fun clearAll() {
+        dao.clearAll()
+    }
+
     private companion object {
         const val MIN_VIDEO_MS = 30_000L
         const val MIN_SAVE_MS = 5_000L

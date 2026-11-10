@@ -71,6 +71,7 @@ class BrowserController(
     private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
     private var fullscreenContainer: FrameLayout? = null
     private var previousOrientation: Int = activity.requestedOrientation
+    private var destroyed = false
 
     private val prefs by lazy {
         activity.getSharedPreferences("web_player", Context.MODE_PRIVATE)
@@ -264,10 +265,10 @@ class BrowserController(
         )
     }
 
-    fun flushPlayback() {
+    fun flushPlayback(onDone: (() -> Unit)? = null) {
         webView.evaluateJavascript(
             "window.__jqcFlushProgress && window.__jqcFlushProgress()",
-            null,
+            { onDone?.invoke() },
         )
     }
 
@@ -307,16 +308,34 @@ class BrowserController(
     }
 
     fun destroy() {
+        if (destroyed) return
+        destroyed = true
         if (fullscreenContainer != null) {
             removeFullscreenInternal()
         }
-        (webView.parent as? ViewGroup)?.removeView(webView)
-        webView.removeJavascriptInterface("JqcBridge")
-        webView.stopLoading()
-        webView.loadUrl("about:blank")
-        webView.clearHistory()
-        webView.removeAllViews()
-        webView.destroy()
+        var tornDown = false
+        val teardown = {
+            if (!tornDown) {
+                tornDown = true
+                (webView.parent as? ViewGroup)?.removeView(webView)
+                // 延迟到进度上报之后才收尾，此时 Activity 可能已经在销毁，
+                // 任何一步失败都不能漏掉最后的 destroy()。
+                runCatching {
+                    webView.removeJavascriptInterface("JqcBridge")
+                    webView.stopLoading()
+                    webView.loadUrl("about:blank")
+                    webView.clearHistory()
+                    webView.removeAllViews()
+                }
+                runCatching { webView.destroy() }
+            }
+        }
+        // 离开浏览器页（返回首页/重建）时视频可能刚播放到一半：先把当前进度
+        // 通过 __jqcFlushProgress 上报，等脚本执行完再销毁。evaluateJavascript
+        // 是异步的，立刻 destroy() 会把最后一次上报吞掉。
+        runCatching { flushPlayback(teardown) }
+        // 页面崩溃或 JS 无响应时回调不会来，兜底强制收尾，避免 WebView 泄漏。
+        webView.postDelayed(teardown, FLUSH_TIMEOUT_MS)
     }
 
     private fun injectSniffer() {
@@ -575,6 +594,9 @@ class BrowserController(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
         private const val KEY_FULLSCREEN_TIP_SHOWN = "fullscreen_tip_shown"
+
+        /** 销毁前等待最后一次进度上报的上限；超时则直接收尾。 */
+        private const val FLUSH_TIMEOUT_MS = 300L
 
         // 递归同源 iframe 找显示面积最大的视频，返回宽高比；跨域或还没尺寸时返回 0。
         private const val VIDEO_ASPECT_SCRIPT =

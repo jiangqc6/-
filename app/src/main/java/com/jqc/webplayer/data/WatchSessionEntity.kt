@@ -38,6 +38,9 @@ interface WatchSessionDao {
     @Query("DELETE FROM watch_sessions WHERE identityUrl = :identityUrl")
     suspend fun deleteByIdentity(identityUrl: String)
 
+    @Query("DELETE FROM watch_sessions")
+    suspend fun clearAll()
+
     @Query("SELECT * FROM watch_sessions ORDER BY updatedAt DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<WatchSessionEntity>>
 
